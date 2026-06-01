@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Immigration Status Checker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1d70b8;
+      --blue-dark: #144e86;
+      --green: #00703c;
+      --red: #d4351c;
+      --amber: #f47738;
+      --grey-50: #f8fafc;
+      --grey-100: #f1f4f8;
+      --grey-200: #e2e8f0;
+      --grey-400: #94a3b8;
+      --grey-600: #475569;
+      --grey-900: #0f172a;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      background: var(--grey-100);
+      min-height: 100vh;
+      color: var(--grey-900);
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--blue);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-badge {
+      background: white;
+      color: var(--blue);
+      font-weight: 800;
+      font-size: 13px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+    .header-title {
+      color: white;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Layout ── */
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    /* ── Form card ── */
+    .form-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
+      padding: 36px 40px;
+      margin-bottom: 32px;
+    }
+
+    .form-card h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--grey-900);
+      margin-bottom: 4px;
+    }
+    .form-card .subtitle {
+      font-size: 14px;
+      color: var(--grey-600);
+      margin-bottom: 28px;
+    }
+
+    .field { margin-bottom: 20px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--grey-600);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .hint { font-size: 12px; color: var(--grey-400); margin-bottom: 6px; }
+
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--grey-200);
+      border-radius: 10px;
+      font-size: 15px;
+      color: var(--grey-900);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background: var(--grey-50);
+    }
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(29,112,184,0.12);
+      background: white;
+    }
+
+    .dob-row { display: grid; grid-template-columns: 72px 72px 100px; gap: 10px; }
+    .dob-field label { text-transform: none; letter-spacing: 0; font-size: 12px; color: var(--grey-400); }
+
+    .divider { border: none; border-top: 1.5px solid var(--grey-100); margin: 24px 0; }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 13px;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.15s, transform 0.1s;
+      margin-top: 4px;
+    }
+    button[type="submit"]:hover { background: var(--blue-dark); }
+    button[type="submit"]:active { transform: scale(0.99); }
+    button[type="submit"]:disabled { background: var(--grey-400); cursor: not-allowed; }
+
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: #fff5f5;
+      border: 1.5px solid #feb2b2;
+      border-radius: 10px;
+      padding: 16px 20px;
+      color: var(--red);
+      font-size: 14px;
+      line-height: 1.5;
+      display: none;
+      margin-top: 20px;
+    }
+    .error-banner strong { display: block; margin-bottom: 4px; font-size: 15px; }
+
+    /* ── Result card ── */
+    #result-section { display: none; }
+
+    .result-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+
+    /* Top hero strip */
+    .result-hero {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      padding: 32px 36px;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .photo-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .photo-wrap img {
+      width: 96px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 3px solid rgba(255,255,255,0.2);
+      display: block;
+    }
+    .photo-placeholder {
+      width: 96px;
+      height: 120px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      border: 2px dashed rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .photo-placeholder svg { opacity: 0.3; }
+
+    .hero-info { flex: 1; min-width: 0; }
+    .hero-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 6px;
+    }
+    .hero-name {
+      font-size: 26px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 12px;
+      line-height: 1.2;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(0,112,60,0.25);
+      color: #6ee7b7;
+      border: 1px solid rgba(0,112,60,0.4);
+    }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 0 2px rgba(52,211,153,0.3);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Info grid */
+    .result-body { padding: 28px 36px; }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .info-tile {
+      background: var(--grey-50);
+      border: 1.5px solid var(--grey-200);
+      border-radius: 12px;
+      padding: 16px 18px;
+    }
+    .info-tile .tile-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--grey-400);
+      margin-bottom: 5px;
+    }
+    .info-tile .tile-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--grey-900);
+    }
+    .info-tile .tile-value.not-available {
+      color: var(--grey-400);
+      font-weight: 400;
+      font-style: italic;
+      font-size: 14px;
+    }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      border-top: 1.5px solid var(--grey-100);
+      padding-top: 24px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--blue-dark); }
+
+    .btn-secondary {
+      background: var(--grey-100);
+      color: var(--grey-900);
+      border: 1.5px solid var(--grey-200);
+    }
+    .btn-secondary:hover { background: var(--grey-200); }
+
+    .btn svg { flex-shrink: 0; }
+
+    /* Photo modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-box {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 380px;
+      width: 90%;
+      text-align: center;
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+    .modal-overlay.open .modal-box { transform: scale(1); }
+    .modal-box img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-bottom: 16px;
+    }
+    .modal-box h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; color: var(--grey-900); }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 520px) {
+      .form-card, .result-body { padding: 24px 20px; }
+      .result-hero { padding: 24px 20px; flex-direction: column; align-items: flex-start; gap: 20px; }
+      .info-grid { grid-template-columns: 1fr; }
+      .hero-name { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="header-badge">UK</span>
+  <span class="header-title">Immigration Status Checker</span>
+</header>
+
+<div class="page">
+
+  <!-- Form -->
+  <div class="form-card">
+    <h1>Check immigration status</h1>
+    <p class="subtitle">Enter the share code and date of birth to verify someone's UK immigration status.</p>
+
+    <form id="checker-form">
+      <div class="field">
+        <label for="share-code">Share code</label>
+        <p class="hint">9-character code provided by the individual, e.g. W9X3M2T4K</p>
+        <input type="text" id="share-code" placeholder="W9X3M2T4K" maxlength="12" autocomplete="off" required />
+      </div>
+
+      <div class="field">
+        <label>Date of birth</label>
+        <p class="hint">For example, 27 3 1990</p>
+        <div class="dob-row">
+          <div class="dob-field">
+            <label for="dob-day">Day</label>
+            <input type="number" id="dob-day" min="1" max="31" placeholder="DD" required />
+          </div>
+          <div class="dob-field">
+            <label for="dob-month">Month</label>
+            <input type="number" id="dob-month" min="1" max="12" placeholder="MM" required />
+          </div>
+          <div class="dob-field">
+            <label for="dob-year">Year</label>
+            <input type="number" id="dob-year" min="1900" max="2100" placeholder="YYYY" required />
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <button type="submit" id="submit-btn">
+        <div class="spinner" id="spinner"></div>
+        <span id="btn-text">Check status</span>
+      </button>
+    </form>
+
+    <div class="error-banner" id="error-banner">
+      <strong>Unable to retrieve status</strong>
+      <span id="error-text"></span>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-section">
+    <div class="result-card">
+
+      <!-- Hero -->
+      <div class="result-hero">
+        <div class="photo-wrap" id="photo-wrap">
+          <div class="photo-placeholder" id="photo-placeholder">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+          </div>
+          <img id="photo-img" src="" alt="Photo" style="display:none" />
+        </div>
+        <div class="hero-info">
+          <div class="hero-label">Verified individual</div>
+          <div class="hero-name" id="result-name">—</div>
+          <div class="status-pill">
+            <div class="status-dot"></div>
+            <span id="result-status">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="result-body">
+        <div class="info-grid">
+          <div class="info-tile">
+            <div class="tile-label">Valid from</div>
+            <div class="tile-value" id="result-valid-from">—</div>
+          </div>
+          <div class="info-tile">
+            <div class="tile-label">Valid until</div>
+            <div class="tile-value" id="result-valid-until">—</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <!-- View photo -->
+          <button class="btn btn-secondary" id="view-photo-btn" onclick="openPhotoModal()" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            View photo
+          </button>
+
+          <!-- Download photo -->
+          <a class="btn btn-secondary" id="download-photo-btn" download="photo.jpg" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download photo
+          </a>
+
+          <!-- Download PDF -->
+          <button class="btn btn-primary" id="download-pdf-btn" style="display:none" onclick="downloadPdf()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            Download full document (PDF)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Photo modal -->
+<div class="modal-overlay" id="photo-modal" onclick="closePhotoModal(event)">
+  <div class="modal-box">
+    <h3>Photo</h3>
+    <img id="modal-photo" src="" alt="Photo of individual" />
+    <div style="display:flex;gap:10px;justify-content:center">
+      <a class="btn btn-primary" id="modal-download-btn" download="photo.jpg">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download
+      </a>
+      <button class="btn btn-secondary" onclick="closePhotoModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Use relative URL when served from the backend, fallback for file:// dev
+  const API = window.location.protocol === "file:" ? "http://localhost:8000" : "";
+  let sessionData = null;
+
+  const form = document.getElementById("checker-form");
+  const submitBtn = document.getElementById("submit-btn");
+  const spinner = document.getElementById("spinner");
+  const btnText = document.getElementById("btn-text");
+  const errorBanner = document.getElementById("error-banner");
+  const errorText = document.getElementById("error-text");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const shareCode = document.getElementById("share-code").value.trim();
+    const day = String(document.getElementById("dob-day").value).padStart(2, "0");
+    const month = String(document.getElementById("dob-month").value).padStart(2, "0");
+    const year = document.getElementById("dob-year").value;
+
+    setLoading(true);
+    errorBanner.style.display = "none";
+    clearResult();
+
+    try {
+      const res = await fetch(`${API}/api/check-immigration-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ share_code: shareCode, date_of_birth: `${year}-${month}-${day}` }),
+      });
+
+      const data = await res.json();
+      console.log("API response:", JSON.stringify({ success: data.success, name: data.name, status: data.status, valid_from: data.valid_from, valid_until: data.valid_until, hasPhoto: !!data.photo, pdf_url: data.pdf_url, error: data.error }));
+
+      if (!res.ok || !data.success) {
+        showError(data.error || data.detail || "An unexpected error occurred.");
+        return;
+      }
+
+      sessionData = data;
+      renderResult(data);
+
+    } catch (err) {
+      showError("Could not connect to the server. Make sure the backend is running.");
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  function renderResult(data) {
+    document.getElementById("result-name").textContent = data.name || "—";
+    document.getElementById("result-status").textContent = data.status || "—";
+
+    const vf = document.getElementById("result-valid-from");
+    const vu = document.getElementById("result-valid-until");
+    vf.textContent = data.valid_from || "Not available";
+    vu.textContent = data.valid_until || "Not available";
+    if (!data.valid_from) vf.classList.add("not-available");
+    if (!data.valid_until) vu.classList.add("not-available");
+
+    // Photo
+    if (data.photo) {
+      const img = document.getElementById("photo-img");
+      const placeholder = document.getElementById("photo-placeholder");
+      img.src = data.photo;
+      img.style.display = "block";
+      placeholder.style.display = "none";
+
+      document.getElementById("modal-photo").src = data.photo;
+      document.getElementById("modal-download-btn").href = data.photo;
+      document.getElementById("download-photo-btn").href = data.photo;
+      document.getElementById("view-photo-btn").style.display = "inline-flex";
+      document.getElementById("download-photo-btn").style.display = "inline-flex";
+    }
+
+    // PDF
+    if (data.pdf_url) {
+      document.getElementById("download-pdf-btn").style.display = "inline-flex";
+    }
+
+    document.getElementById("result-section").style.display = "block";
+    document.getElementById("result-section").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function downloadPdf() {
+    if (!sessionData?.pdf_source_url) return;
+    const btn = document.getElementById("download-pdf-btn");
+    btn.disabled = true;
+    btn.textContent = "Downloading…";
+    try {
+      const res = await fetch(`${API}/api/download-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pdf_source_url: sessionData.pdf_source_url,
+          cookies: sessionData.cookies,
+        }),
+      });
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "immigration-status.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("PDF download failed. The session may have expired.");
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg> Download full document (PDF)`;
+    }
+  }
+
+  function openPhotoModal() {
+    document.getElementById("photo-modal").classList.add("open");
+  }
+  function closePhotoModal(e) {
+    if (!e || e.target === document.getElementById("photo-modal") || !e.target.closest) {
+      document.getElementById("photo-modal").classList.remove("open");
+    }
+  }
+
+  function clearResult() {
+    document.getElementById("result-section").style.display = "none";
+    document.getElementById("result-name").textContent = "—";
+    document.getElementById("result-status").textContent = "—";
+    document.getElementById("result-valid-from").textContent = "—";
+    document.getElementById("result-valid-until").textContent = "—";
+    document.getElementById("result-valid-from").classList.remove("not-available");
+    document.getElementById("result-valid-until").classList.remove("not-available");
+    const img = document.getElementById("photo-img");
+    img.src = "";
+    img.style.display = "none";
+    document.getElementById("photo-placeholder").style.display = "flex";
+    document.getElementById("view-photo-btn").style.display = "none";
+    document.getElementById("download-photo-btn").style.display = "none";
+    document.getElementById("download-pdf-btn").style.display = "none";
+    sessionData = null;
+  }
+
+  function setLoading(on) {
+    submitBtn.disabled = on;
+    spinner.style.display = on ? "block" : "none";
+    btnText.textContent = on ? "Checking status…" : "Check status";
+  }
+
+  function showError(msg) {
+    errorText.textContent = msg;
+    errorBanner.style.display = "block";
+  }
+</script>
+</body>
+</html>
