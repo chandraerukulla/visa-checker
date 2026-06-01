@@ -1,7 +1,7 @@
 from playwright.async_api import async_playwright
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from pydantic import BaseModel
@@ -16,7 +16,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve frontend at /
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/app/")
+
+# Serve frontend at /app
 frontend_dir = Path(__file__).parent.parent / "frontend"
 if frontend_dir.exists():
     app.mount("/app", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
