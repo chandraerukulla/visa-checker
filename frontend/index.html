@@ -395,7 +395,7 @@
     <form id="checker-form">
       <div class="field">
         <label for="share-code">Share code</label>
-        <p class="hint">9-character code provided by the individual, e.g. W9X3M2T4K</p>
+        <p class="hint">9-character code, e.g. W9X3M2T4K or W9X 3M2 T4K</p>
         <input type="text" id="share-code" placeholder="W9X3M2T4K" maxlength="12" autocomplete="off" required />
       </div>
 
@@ -522,7 +522,7 @@
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const shareCode = document.getElementById("share-code").value.trim();
+    const shareCode = document.getElementById("share-code").value.replace(/\s+/g, "").trim();
     const day = String(document.getElementById("dob-day").value).padStart(2, "0");
     const month = String(document.getElementById("dob-month").value).padStart(2, "0");
     const year = document.getElementById("dob-year").value;
